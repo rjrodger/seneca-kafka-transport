@@ -1,14 +1,14 @@
 {
-  "name": "seneca-zmq-transport",
+  "name": "seneca-kafka-transport",
   "version": "0.1.0",
-  "description": "Seneca ZeroMQ transport",
-  "main": "zmq-transport.js",
+  "description": "Seneca Kafka transport",
+  "main": "kafka-transport.js",
   "scripts": {
     "test": "node_modules/.bin/mocha test/*.test.js"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/rjrodger/seneca-zmq-transport.git"
+    "url": "git://github.com/rjrodger/seneca-kafka-transport.git"
   },
   "keywords": [
     "seneca",
@@ -18,26 +18,19 @@
   "author": "Richard Rodger (http://richardrodger.com)",
   "license": "MIT",
   "dependencies": {
-    "underscore": "1.5.x",
-    "async": "0.2.x",
-    "nid": "0.3.x",
-    "connect": "2.12.x",
-    "patrun": "0.1.x",
-    "zmq": "~2.6.0",
-    "request": "~2.33.0",
-    "kafkaesque": "0.0.6"
+    "kafkaesque": "0.0.6",
+    "nid": "~0.3.2",
+    "underscore": "~1.6.0"
   },
   "peerDependencies": {
     "seneca": "*"
   },
   "devDependencies": {
-    "gex": "0.1.x",
-    "chai": "1.8.x",
-    "mocha": "1.17.x"
+    "mocha": "~1.17.1"
   },
   "files": [
     "README.md",
     "LICENSE.txt",
-    "zmq-transport.js"
+    "kafka-transport.js"
   ]
 }

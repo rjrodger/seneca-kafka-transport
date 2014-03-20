@@ -1,7 +1,10 @@
+var nid = require('nid')
+
 require('seneca')()
-  .declare('foo')
-  .client({type:'queue',pin:'foo:*'})
+  .use('..')
+  .client({type:'queue'})
   .ready(function(){
-    this.act('foo:1,bar:A',function(err,out){console.log(out)})
-    this.act('foo:2,bar:B',function(err,out){console.log(out)})
+    var seneca = this
+    seneca.act({foo:1,bar:'A',nid:nid()},function(err,out){console.log(out)})
+    seneca.act({foo:2,bar:'B',nid:nid()},function(err,out){console.log(out)})
   })
