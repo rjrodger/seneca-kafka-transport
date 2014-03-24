@@ -21,6 +21,8 @@ module.exports = function( options ) {
 
   options = seneca.util.deepextend({
     topicprefix:'seneca_',
+    groupprefix:'seneca_',
+    partition:0,
     queue: {
       brokers: [{
         host: 'localhost',
@@ -52,6 +54,7 @@ module.exports = function( options ) {
     var brokers = options.queue.brokers
 
     var in_opts = {
+      group:    options.groupprefix+'listen',
       brokers:  options.queue.brokers,
       clientId: options.queue.clientid+'~LISTEN_IN',
       maxBytes: options.queue.maxbytes,
@@ -76,9 +79,11 @@ module.exports = function( options ) {
         kafka_in.metadata({topic:options.topicprefix+'act',}, function(err, metadata) {
           if( err) return done(err);
 
+          var partition = args.partition
+
           kafka_in.poll({
             topic:options.topicprefix+'act',
-            partition:0
+            partition:partition
           }, function(err, k){
             if(err) return done(err);
             
@@ -106,9 +111,10 @@ module.exports = function( options ) {
 
                   kafka_out.metadata({topic:out_topic}, function(err, metadata) {
 
-                    kafka_out.produce({
-                      topic: out_topic,
-                      partition: 0}, [ JSON.stringify(outmsg) ], function(err, response) {
+                    var addr = { topic: out_topic, partition: data.partition }
+                    console.dir(addr)
+
+                    kafka_out.produce(addr, [ JSON.stringify(outmsg) ], function(err, response) {
                         err && console.log(err);
                       })
                   })
@@ -163,9 +169,11 @@ module.exports = function( options ) {
       kafka_in.metadata({topic:in_topic}, function(err, metadata) {
         if( err ) return done(err);
 
+        var partition = args.partition
+
         kafka_in.poll({
           topic:in_topic,
-          partition:0
+          partition:partition
 
         }, function(err, k){
           if(err) return done(err);
@@ -205,21 +213,27 @@ module.exports = function( options ) {
       kafka_out.metadata({topic:options.topicprefix+'act'}, function(err, metadata) {
         if( err ) return done(err);
 
+        var partition = args.partition
+
         var client = function( args, done ) {
           var outmsg = {
             id:   nid(),
             kind: 'act',
             client: options.queue.clientid,
+            partition: partition,
             act:  args
           }
           var outstr = JSON.stringify(outmsg)
           callmap[outmsg.id] = {done:done}
 
-          var addr = {topic:options.topicprefix+'act', partition: 0}
+          var addr = {topic:options.topicprefix+'act', partition: partition}
 
           kafka_out.produce( addr, [ JSON.stringify(outmsg) ], function(err, response) {
             err && console.log(err);
           })
+
+          partition += 1
+          partition = partition % 2
         }
 
 
