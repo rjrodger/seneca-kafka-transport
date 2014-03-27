@@ -112,7 +112,6 @@ module.exports = function( options ) {
                   kafka_out.metadata({topic:out_topic}, function(err, metadata) {
 
                     var addr = { topic: out_topic, partition: data.partition }
-                    console.dir(addr)
 
                     kafka_out.produce(addr, [ JSON.stringify(outmsg) ], function(err, response) {
                         err && console.log(err);
@@ -217,18 +216,20 @@ module.exports = function( options ) {
 
         var client = function( args, done ) {
           var outmsg = {
-            id:   nid(),
-            kind: 'act',
-            client: options.queue.clientid,
+            id:        nid(),
+            kind:      'act',
+            client:    options.queue.clientid,
             partition: partition,
-            act:  args
+            act:       seneca.util.clean(args)
           }
+
+
           var outstr = JSON.stringify(outmsg)
           callmap[outmsg.id] = {done:done}
 
           var addr = {topic:options.topicprefix+'act', partition: partition}
 
-          kafka_out.produce( addr, [ JSON.stringify(outmsg) ], function(err, response) {
+          kafka_out.produce( addr, [ outstr ], function(err, response) {
             err && console.log(err);
           })
 
