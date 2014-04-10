@@ -1,6 +1,6 @@
 {
   "name": "seneca-kafka-transport",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Seneca Kafka transport",
   "main": "kafka-transport.js",
   "scripts": {
@@ -18,7 +18,7 @@
   "author": "Richard Rodger (http://richardrodger.com)",
   "license": "MIT",
   "dependencies": {
-    "kafkaesque": "~0.0.6",
+    "kafkaesque": "~0.0.8",
     "nid": "~0.3.2",
     "underscore": "~1.6.0",
     "uuid": "~1.4.1",
