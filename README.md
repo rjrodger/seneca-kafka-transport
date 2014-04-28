@@ -1,9 +1,64 @@
 # seneca-kafka-transport
 
-Documentation to follow...
+Kafka transport module for seneca. To run the example code:
 
-Use https://github.com/apache/kafka/commit/00afb619cb1f2aaca0ddc785ab1d649428f9c93e
+download the latest Kafka build from http://kafka.apache.org/downloads.html (tested against 0.8.1)
 
+unpack and follow the build instructions to create Kafka binaries for your system
+
+cd to the kafka directory
+
+```
+cd kafka-0.8.1-src/kafka
+```
+
+start zookeeper
+
+```
+nohup bin/zookeeper-server-start.sh config/zookeeper.properties >zk.log 2>&1 &
+```
+
+start kafka
+
+```
+nohup bin/kafka-server-start.sh config/server.properties >kafka1.log 2>&1 &
+```
+
+create a request topic
+
+```
+bin /kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 3 --topic request
+```
+
+create a reponse topic
+
+```
+bin /kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 3 --topic response
+```
+
+cd into the module test folder
+
+```
+cd seneca-kafka-transport/test
+```
+
+initialize the zookeeper configuration
+
+```
+node setConfig.js
+```
+
+run the server
+
+```
+node server.js
+```
+
+and the client
+
+```
+node client.js
+```
 
 
 ### Support

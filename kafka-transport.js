@@ -1,137 +1,80 @@
 'use strict';
 
 var nid = require('nid');
-var busOptions = { zkroot: 'localhost:2181', namespace: 'canon', start: 'all' };
 
-
-
-module.exports = function( options ) {
+module.exports = function(options) {
   var seneca = this;
   var plugin = 'kafka-transport';
   var listenBus;
-  var listenSlot;
   var clientBus;
-  var clientSlot;
-
-
-  options = seneca.util.deepextend({
-    topicprefix:'seneca_',
-    groupprefix:'seneca_',
-    partition:0,
-    queue: {
-      brokers: [{
-        host: 'localhost',
-        port: 9092
-      }],
-      clientid:nid(),
-      maxbytes:9999999
-    }
-  }, options);
-
 
   if (!seneca.hasplugin('transport')) {
     seneca.use('transport');
   }
 
-
-
-  /**
-   * TODO: topic name to come from config
-   */
   function hookListenQueue(args, done) {
-    var seneca = this;
+    listenBus = require('microbial')(options.microbial);
 
-    listenBus = require('./lib/kafka/bus')(busOptions);
-    listenBus.setup(function(err) {
-      if (err) {
-        console.log(err);
-      }
-
-      listenBus.register({topicName: 'request'},
-      function(err, slot) {
-        if (err) { console.log(err); }
-        listenSlot = slot;
-      },
-      function(message, respond) {
-        if ('act' === message.request.kind) {
-          seneca.act(message.request.act, function(err,res){
-            var outmsg = {kind:'res',
-                          id:message.request.id,
-                          err:err?err.message:null,
-                          res:res};
-            respond(message, outmsg);
-          });
-        }
+    var handlerFn = function(req, res) {
+      seneca.act(req.request.act, function(err, result){
+        var outmsg = {kind:'res',
+                      id:req.request.id,
+                      err:err?err.message:null,
+                      res:result};
+        res.respond(outmsg);
       });
+    };
+    listenBus.run([{group: options.kafka.group, topicName: options.kafka.requestTopic}],
+                  [{ match: { kind: 'act' }, execute: handlerFn}], function(err) {
+      if (err) { return console.log(err); }
+      seneca.log.info('listen', args.host, args.port, seneca.toString());
+      done();
     });
-    seneca.log.info('listen', args.host, args.port, seneca.toString());
-    done();
   }
 
-
-
-  /**
-   * TODO: topic name to come from config
-   */
-  function hookClientQueue( args, done ) {
+  function hookClientQueue(args, done) {
     var seneca = this;
     var callmap = {};
+    clientBus = require('microbial')(options.microbial);
 
-    clientBus = require('./lib/kafka/bus')(busOptions);
-    clientBus.setup(function(err) {
-
+    clientBus.run([{group: options.kafka.group, topicName: options.kafka.responseTopic, responseChannel: true}], [], function(err) {
       if (err) {
         console.log(err);
       }
-
-      clientBus.register({topicName: 'response', responseChannel: true},
-      function(err, slot) {
-        if (err) {
-          console.log(err);
-        }
-        else {
-          clientSlot = slot;
-
-          var client = function(args, done) {
-            var outmsg = {
-              id:   nid(),
-              kind: 'act',
-              act:  args
-            };
-            callmap[outmsg.id] = {done:done};
-            clientBus.request({topicName: 'request'}, outmsg);
+      else {
+        var client = function(args, done) {
+          var outmsg = {
+            id:   nid(),
+            kind: 'act',
+            act:  args
           };
-          seneca.log.info('client', 'pubsub', args.host, args.port, seneca.toString());
-          done(null,client);
-        }
-      },
-      function(message) {
-        var call = callmap[message.response.id];
-        if( call ) {
-          delete callmap[message.response.id];
-          call.done(message.response.err ? new Error(message.response.err) : null, message.response.res);
-        }
-      });
+          callmap[outmsg.id] = {done:done};
+          clientBus.request({topicName: options.kafka.requestTopic}, outmsg, function(res) {
+            var call = callmap[res.response.id];
+            if( call ) {
+              delete callmap[res.response.id];
+              call.done(res.response.err ? new Error(res.response.err) : null, res.response.res);
+            }
+          });
+        };
+        seneca.log.info('client', 'pubsub', args.host, args.port, seneca.toString());
+        done(null,client);
+      }
     });
   }
-
-
 
   var shutdown = function(args, done) {
     if (listenBus) {
-      listenBus.deregister('request', listenSlot, function(err) {
-        if (err) { console.log('shutdown error: ' + err); }
-        done();
+      listenBus.tearDown(function(err) {
+        done(err);
       });
     }
     else if (clientBus) {
-      clientBus.deregister('response', clientSlot, function(err) {
-        if (err) { console.log('shutdown error: ' + err); }
-        done();
+      clientBus.tearDown(function(err) {
+        done(err);
       });
     }
   };
-
 
   seneca.add({role:'transport',hook:'listen',type:'queue'}, hookListenQueue);
   seneca.add({role:'transport',hook:'client',type:'queue'}, hookClientQueue);
