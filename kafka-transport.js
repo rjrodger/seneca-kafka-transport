@@ -37,29 +37,33 @@ module.exports = function(options) {
     var callmap = {};
     clientBus = require('microbial')(options.microbial);
 
+    function send(args, done) {
+      var outmsg = {
+        id:   nid(),
+        kind: 'act',
+        act:  args
+      };
+      callmap[outmsg.id] = {done:done};
+      clientBus.request({topicName: options.kafka.requestTopic}, outmsg, function(res) {
+        var call = callmap[res.response.id];
+        if( call ) {
+          delete callmap[res.response.id];
+          call.done(res.response.err ? new Error(res.response.err) : null, res.response.res);
+        }
+      });
+    }
+
+    function match(args) {
+      return true;
+    }
+
     clientBus.run([{group: options.kafka.group, topicName: options.kafka.responseTopic, responseChannel: true}], [], function(err) {
       if (err) {
-        console.log(err);
+        return done(err)
       }
-      else {
-        var client = function(args, done) {
-          var outmsg = {
-            id:   nid(),
-            kind: 'act',
-            act:  args
-          };
-          callmap[outmsg.id] = {done:done};
-          clientBus.request({topicName: options.kafka.requestTopic}, outmsg, function(res) {
-            var call = callmap[res.response.id];
-            if( call ) {
-              delete callmap[res.response.id];
-              call.done(res.response.err ? new Error(res.response.err) : null, res.response.res);
-            }
-          });
-        };
-        seneca.log.info('client', 'pubsub', args.host, args.port, seneca.toString());
-        done(null,client);
-      }
+
+      seneca.log.info('client', 'pubsub', args.host, args.port, seneca.toString());
+      done(null, {send: send, match: match});
     });
   }
 
