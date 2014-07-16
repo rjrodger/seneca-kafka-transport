@@ -27,13 +27,13 @@ nohup bin/kafka-server-start.sh config/server.properties >kafka1.log 2>&1 &
 create a request topic
 
 ```
-bin /kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 3 --topic request
+bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 3 --topic request
 ```
 
 create a reponse topic
 
 ```
-bin /kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 3 --topic response
+bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 3 --topic response
 ```
 
 cd into the module test folder
